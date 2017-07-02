@@ -2,6 +2,14 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 
+""" 
+ Simple script to label line similar to what contour function does
+    
+    credits: 
+    Thomas Albrecht
+    https://stackoverflow.com/questions/19876882/print-string-over-plotted-line-mimic-contour-plot-labels
+"""
+
 def label_line(line, label_text, near_i=None, near_x=None, near_y=None, rotation_offset=0, offset=(0,0)):
     """call 
         l, = plt.loglog(x, y)
