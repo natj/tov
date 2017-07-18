@@ -152,3 +152,169 @@ def simpler_eos():
     m = monotrope(K, G)
     eos = polytrope([m], [0.0])
     return eos
+
+
+# If run as a script, lets visualize the library
+if __name__ == "__main__":
+    import matplotlib
+    import matplotlib.pyplot as plt
+    from crust import SLyCrust
+    import numpy as np
+    from label_line import label_line
+
+
+    plt.rc('font', family='serif')
+    plt.rc('xtick', labelsize=7)
+    plt.rc('ytick', labelsize=7)
+    plt.rc('axes', labelsize=7)
+
+    fig = plt.figure(figsize=(3.54, 2.19)) #single column fig
+    #fig = plt.figure(figsize=(7.48, 4.0))  #two column figure
+    gs = plt.GridSpec(1, 1)
+
+    ax = plt.subplot(gs[0, 0])
+    ax.minorticks_on()
+    ax.set_xlim(2.0e13, 2.0e16)
+    ax.set_ylim(1.0e32, 1.0e39)
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+
+    ax.set_xlabel(r'Density $\rho$ (g cm$^{-3}$)')
+    ax.set_ylabel(r'Pressure $P$ (dyne cm$^{-2}$)')
+
+
+    #rho_ND
+    rhond = 4.0e11
+
+    #normal nuclear saturation density
+    rhon = 2.8e14
+
+    #inner crust
+    col = 'lightgrey'
+    xmin = rhond
+    xmax = 0.5*rhon
+    ax.fill_between([xmin, xmax], [1e10, 1e10], [1e42, 1e42], facecolor=col, color=None, alpha=1.0, edgecolor=col)
+
+    #different ns structures
+    y_text = 1.0e38
+    ax.text(5.0e13, y_text, 'Inner\ncrust', rotation=0, ha='center', va='center', size=8)
+    ax.text(6.0e14, y_text, 'Core', rotation=0, ha='center', va='center', size=8)
+
+    
+    lstyle = 'dotted'
+    ax.plot([rhon, rhon], [1.0e16, 1e40], "r", linestyle=lstyle)
+    txt = ax.text(rhon, 2.0e36, r'$\rho_n$', rotation=90, ha='center', va='center', size=8)
+    txt.set_bbox(dict(facecolor='white', edgecolor='none', pad=3))
+
+    #ax.plot([rhond, rhond], [1.0e16, 1e40], "r", linestyle=lstyle)
+    #txt = ax.text(rhond*0.5, 2.0e36, r'$\rho_{\mathrm{ND}}$', rotation=90, ha='center', va='center', size=8)
+
+
+    if False:
+        ax.set_ylim(1.0, 5.0)
+        ax.set_yscale('linear')
+        ax.set_ylabel(r'Adiabatic index $\gamma$')
+        
+        ax.fill_between([xmin, xmax], [1.0, 1.0], [10.0, 10.0], facecolor=col, color=None, alpha=1.0, edgecolor=col)
+        
+        #different ns structures
+        y_text = 4.5
+        ax.text(5.0e13, y_text, 'Inner\ncrust', rotation=0, ha='center', va='center', size=8)
+        ax.text(6.0e14, y_text, 'Core', rotation=0, ha='center', va='center', size=8)
+        
+        lstyle = 'dotted'
+        ax.plot([rhon, rhon], [1.0, 10.0], "r", linestyle=lstyle)
+        txt = ax.text(rhon, 4.5, r'$\rho_n$', rotation=90, ha='center', va='center', size=8)
+        txt.set_bbox(dict(facecolor='white', edgecolor='none', pad=3))
+
+
+
+    if True:
+        i = 0
+        for key, value in eosLib.iteritems():
+            dense_eos = get_eos(key)
+            eos = glue_crust_and_core( SLyCrust, dense_eos )
+
+            rho = np.logspace(13, 18, 100)
+
+            linestyle='solid'
+            col = 'k'
+            if value[4] == 'npem':
+                col = 'k'
+            if value[4] == 'meson':
+                col = 'b'
+            if value[4] == 'hyperon':
+                col = 'g'
+            if value[4] == 'quark':
+                col = 'r'
+
+            if True:
+                #l, = ax.plot(rad, mass, color=col, linestyle=linestyle, alpha = 0.9)
+                press = eos.pressures(rho)
+                l, = ax.plot(rho, press, color=col, linestyle=linestyle, alpha=0.9)
+
+            if False:
+
+                gamma = np.zeros(len(rho))
+                for j, r in enumerate(rho):
+                    trope = eos._find_interval_given_density(r)
+                    gamma[j] = trope.G
+
+                #if key == 'SLy':
+                #    col = 'darkorange'
+
+                l, = ax.plot(rho, gamma, color=col, linestyle=linestyle, alpha=0.8)
+
+                # labels for lines
+                near_y = None
+                near_x = 3.0e15
+                rotation_offset=0.0
+                offslabels = ['WFF2', 'APR3', 'SLy', 'MS1b']
+                if key in offslabels:
+                    near_x += 6.0e15
+                label_line(l, key, near_y=near_y, near_x=near_x, rotation_offset=rotation_offset)
+
+            i += 1
+
+
+    #Exact SLy curve
+    if False:
+        from SLy import SLyGs
+        SLyGs = SLyGs[SLyGs[:,0].argsort()] #sorting
+
+        rhoSLy   = 10.0**SLyGs[:,0]
+        gammaSLy = SLyGs[:,1]
+        ax.plot( rhoSLy, gammaSLy, color='darkorange', alpha=1.0, linewidth=1.0, linestyle='dashed')
+
+    if False:
+        from SLy import SLyPs
+        rhoSLy   = 10.0**SLyPs[:,0]
+        pressSLy = 10.0**SLyPs[:,1]
+        ax.plot( rhoSLy, pressSLy, color='darkorange', alpha=1.0, linewidth=1.5, linestyle='dashed')
+
+
+
+    dense_eos = get_eos('SLy')
+    eos = glue_crust_and_core( SLyCrust, dense_eos )
+    rho = np.logspace(13, 18, 100)
+
+    linestyle='solid'
+    col = 'darkorange'
+    if False:
+        press = eos.pressures(rho)
+        l, = ax.plot(rho, press, color=col, linestyle=linestyle, alpha=0.9)
+    if False:
+        gamma = np.zeros(len(rho))
+        for j, r in enumerate(rho):
+            trope = eos._find_interval_given_density(r)
+            gamma[j] = trope.G
+        l, = ax.plot(rho, gamma, color=col, linestyle=linestyle, alpha=0.8)
+
+
+
+
+
+
+    plt.subplots_adjust(left=0.15, bottom=0.16, right=0.98, top=0.95, wspace=0.1, hspace=0.1)
+    plt.savefig('core_eos.pdf')
+    #plt.savefig('core_gamma.pdf')
